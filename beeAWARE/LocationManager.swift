@@ -1,4 +1,5 @@
 import CoreLocation
+import UIKit
 import Combine
 import UserNotifications
 import Foundation
@@ -11,12 +12,13 @@ class LocationManager: NSObject, CLLocationManagerDelegate, ObservableObject, UN
     @Published var currentLocation: CLLocation?
 
     override init() {
-        super.init()
-        locationManager.delegate = self
-        locationManager.requestAlwaysAuthorization()
-        locationManager.allowsBackgroundLocationUpdates = true
-        UNUserNotificationCenter.current().delegate = self
-    }
+            super.init()
+            locationManager.delegate = self
+            locationManager.requestAlwaysAuthorization()
+            locationManager.allowsBackgroundLocationUpdates = true
+            locationManager.showsBackgroundLocationIndicator = true
+            UNUserNotificationCenter.current().delegate = self
+        }
 
     func startUpdatingLocation() {
         locationManager.startUpdatingLocation()
@@ -42,10 +44,16 @@ class LocationManager: NSObject, CLLocationManagerDelegate, ObservableObject, UN
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        if let location = locations.last {
-            currentLocation = location
+            if let location = locations.last {
+                currentLocation = location
+                
+                // Check if the app is in the background or suspended state
+                if UIApplication.shared.applicationState == .background || UIApplication.shared.applicationState == .inactive {
+                    guard let location = self.currentLocation else { return }
+                    updateLocationInfo(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
+                }
+            }
         }
-    }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("Location update failed with error: \(error.localizedDescription)")
